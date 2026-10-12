@@ -1,0 +1,363 @@
+<meta charset="utf-8">
+<title>StratX Demo Script</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a run-of-show strip, then one row per scene: timecode rail on the left, cue + spoken lines on the right. Single dark brand look. */
+:root {
+  --bg: #08121f;
+  --surface: #0d1b2d;
+  --surface-2: #12243a;
+  --line: #1d3350;
+  --fg: #f4f7fb;
+  --fg-2: #a9b8cc;
+  --fg-3: #6f839e;
+  --accent: #ff7a1a;
+  --accent-soft: rgba(255, 122, 26, .14);
+  --green: #15784f;
+  --green-deep: #0f5b3f;
+  --pos: #34c27a;
+  --warn: #f4b740;
+  --display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--display); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.brand svg { height: 64px; width: auto; max-width: 100%; }
+.tagline { font-size: 17px; line-height: 1.35; color: var(--fg-2); border-left: 1px solid var(--line); padding-left: 22px; }
+.tagline b { color: var(--accent); font-weight: 700; }
+.meta { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.meta .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+.meta .runtime { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.toggle { font: 600 14px var(--display); color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.toggle[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #1a0d02; }
+.toggle:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.intro { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; padding-block: 32px; }
+.intro h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; font-weight: 800; letter-spacing: -.02em; margin: 0 0 14px; text-wrap: balance; }
+.intro h1 span { color: var(--accent); }
+.intro p { color: var(--fg-2); margin: 0; max-width: 60ch; }
+.legend { display: grid; gap: 10px; align-content: start; font-size: 14px; color: var(--fg-2); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.legend div { display: flex; gap: 10px; align-items: baseline; }
+.legend .k { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; min-width: 64px; }
+.legend strong { color: var(--accent); }
+
+/* run of show */
+.ros { margin-block: 8px 40px; }
+.ros-bar { display: flex; gap: 2px; height: 44px; border-radius: 10px; overflow: hidden; }
+.chip { flex: var(--d) 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; font: 600 11px var(--mono); color: var(--fg-2); background: var(--surface-2); border: 0; cursor: pointer; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip:hover { background: var(--line); color: var(--fg); }
+.chip.hot { background: var(--accent); color: #1a0d02; }
+.chip.go { background: var(--green-deep); color: var(--fg); }
+.ros-scale { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--fg-3); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* scenes */
+.scene { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 28px; padding-block: 34px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+.rail { display: flex; flex-direction: column; gap: 6px; }
+.rail .n { font: 600 12px var(--mono); color: var(--accent); letter-spacing: .08em; }
+.rail h2 { font-size: 22px; line-height: 1.2; margin: 0; font-weight: 800; text-wrap: balance; }
+.rail .tc { font: 600 13px var(--mono); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.rail .est { font: 11px var(--mono); color: var(--fg-3); }
+.body { display: grid; gap: 16px; min-width: 0; }
+.cue { font-family: var(--mono); font-size: 13px; line-height: 1.55; color: var(--fg-2); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.cue .lbl { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 6px; }
+.cue code { color: var(--fg); background: var(--surface-2); padding: 1px 6px; border-radius: 5px; }
+.say { font-size: 20px; line-height: 1.6; font-weight: 500; margin: 0; max-width: 62ch; }
+.say p { margin: 0 0 12px; }
+.say p:last-child { margin-bottom: 0; }
+.say strong { color: var(--accent); font-weight: 800; }
+.say em { font-style: normal; color: var(--pos); font-weight: 700; }
+.say .bridge { color: var(--fg-2); font-style: italic; font-weight: 500; }
+.cue .tr { display: block; color: var(--accent); margin-bottom: 6px; }
+.beat { color: var(--fg-3); font-family: var(--mono); font-size: 14px; }
+.alt { font-size: 14px; color: var(--fg-2); border: 1px dashed var(--warn); border-radius: 12px; padding: 12px 16px; }
+.alt b { color: var(--warn); }
+
+/* diagram in scene 3 */
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; border-radius: 12px; overflow: hidden; }
+.flow div { background: var(--surface-2); padding: 14px; font-size: 13px; color: var(--fg-2); }
+.flow b { display: block; font: 600 11px var(--mono); color: var(--accent); margin-bottom: 4px; }
+.flow span { display: block; color: var(--fg); font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.flow div:last-child { background: var(--green-deep); }
+.flow div:last-child b { color: var(--pos); }
+
+.split { display: flex; flex-wrap: wrap; gap: 2px; border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
+.split div { padding: 12px 16px; font-size: 14px; }
+.split .q { flex: 97 1 0; background: var(--green); min-width: 0; }
+.split .p { flex: 12 1 0; background: var(--accent); color: #1a0d02; min-width: 90px; }
+.split strong { display: block; font-size: 20px; }
+
+/* production notes */
+.notes { margin-top: 48px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.notes h2 { margin: 0 0 18px; font-size: 22px; font-weight: 800; }
+.notes ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--fg-2); }
+.notes li b { color: var(--fg); }
+footer { margin-top: 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: var(--fg-3); font-size: 13px; }
+
+/* teleprompter mode */
+body.prompter .cue, body.prompter .alt, body.prompter .flow, body.prompter .split, body.prompter .intro, body.prompter .notes, body.prompter .ros { display: none; }
+body.prompter .say { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.5; max-width: none; }
+body.prompter .scene { grid-template-columns: 120px minmax(0, 1fr); }
+
+@media (max-width: 760px) {
+  .intro { grid-template-columns: 1fr; }
+  .scene, body.prompter .scene { grid-template-columns: 1fr; gap: 14px; }
+  .rail { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .meta { align-items: flex-start; }
+  .tagline { border-left: 0; padding-left: 0; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .say { font-size: 18px; }
+  .chip { font-size: 0; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 330 72" role="img" aria-label="StratX">
+        <defs>
+          <linearGradient id="xg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffa45c"/>
+            <stop offset="1" stop-color="#ff6a00"/>
+          </linearGradient>
+        </defs>
+        <rect x="2" y="6" width="60" height="60" rx="17" fill="#12243a" stroke="#1d3350"/>
+        <path d="M16 48 L28 32 L36 40 L48 22" fill="none" stroke="#ff7a1a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="48" cy="22" r="4.6" fill="#34c27a"/>
+        <text x="78" y="55" font-family="Plus Jakarta Sans, Segoe UI, sans-serif" font-weight="800" font-size="50" letter-spacing="-1.5" fill="#f4f7fb" id="wm">Strat</text>
+        <g transform="translate(226 18)" stroke-linecap="round" id="wx">
+          <path d="M4 4 L40 40" stroke="url(#xg)" stroke-width="10"/>
+          <path d="M40 4 L4 40" stroke="#f4f7fb" stroke-width="10"/>
+          <circle cx="40" cy="4" r="5" fill="#34c27a" stroke="none"/>
+        </g>
+      </svg>
+      <div class="tagline">Trade strategies.<br>Protect the edge. <b>Prove the alpha.</b></div>
+    </div>
+    <div class="meta">
+      <span class="kicker">Demo video · speaker script</span>
+      <span class="runtime" id="runtime">3:30</span>
+      <button class="toggle" id="prompter" type="button" aria-pressed="false">Teleprompter mode</button>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div>
+      <h1>The StratX pitch. <span>Shown live, in three minutes.</span></h1>
+      <p>A full walkthrough with the app open the whole time: sign in, set up, search, a strategy page, the grade, auctions, creating a strategy, starting an auction and accepting an offer. Plain words throughout, for judges who aren’t traders. Face cam bottom-right, 1920×1080, screen recording full-bleed.</p>
+    </div>
+    <div class="legend">
+      <div><span class="k">Screen</span> what to show and click</div>
+      <div><span class="k">Say</span> the line, read at about 150 words a minute</div>
+      <div><span class="k">Hit</span> <strong>orange</strong> words get the punch</div>
+      <div><span class="k">Bridge</span> <em style="font-style:italic">italic line</em> = spoken link into the scene</div>
+      <div><span class="k">Beat</span> <span class="beat">/</span> = half-second pause</div>
+    </div>
+  </section>
+
+  <nav class="ros" aria-label="Run of show">
+    <div class="ros-bar" id="rosbar"></div>
+    <div class="ros-scale"><span>0:00</span><span id="ros-end">2:55</span></div>
+  </nav>
+
+  <main id="scenes">
+
+    <section class="scene" id="problem" data-d="0" data-kind="hot">
+      <div class="rail"><span class="n">01</span><h2>Intro &amp; the problem</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: fade in from black on the Explore page.</span>StratX open on <code>Explore</code>, scrolled to the top. Face cam on. Slowly zoom in on the headline.</div>
+        <div class="say">
+          <p>Hey, I&rsquo;m Zuka, and this is <strong>StratX</strong>.</p>
+          <p>Quant traders build strategies that make money, but a strategy is only valuable while it&rsquo;s secret. Show it, and you lose your edge. Hide it, and nobody believes you.</p>
+          <p>And investors can&rsquo;t easily find or trust strategies without relying on <strong>unverified claims</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="solution" data-d="0">
+      <div class="rail"><span class="n">02</span><h2>The solution</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: slow scroll down Explore.</span>Scroll past the three steps (Find, Check, Make an offer) and a few strategy cards.</div>
+        <div class="say">
+          <p>So we asked: what if quants could prove their performance and sell access to their strategy, <strong>without ever revealing it</strong>?</p>
+          <p>That&rsquo;s StratX, a marketplace on Solana connecting quants who need capital with investors. Here&rsquo;s how it works.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="signin" data-d="0">
+      <div class="rail"><span class="n">03</span><h2>Getting in</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: quick cut to the onboarding page.</span>Open <code>/onboarding</code> → click <code>Get started</code> straight away. Hover Google, Apple, Email, then the wallet list. Point at “StratX never asks for your seed phrase or private key.” Click <code>Phantom</code> → approve → choose <code>Both</code> → move quickly through the steps → <code>Finish</code>.</div>
+        <div class="say">
+          <p>Sign in with Google, Apple, email, or any Solana wallet. We <strong>never</strong> ask for your private keys.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="search" data-d="0">
+      <div class="rail"><span class="n">04</span><h2>Discover</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: Finish drops you on Explore. No cut.</span>Type: <code>low risk strategies with a long track record</code> → Enter. Hold on “How we understood your search”, then the “Why it matched” line on the Basalt card.</div>
+        <div class="say">
+          <p>Investors search in plain English, and StratX shows how it read the search and <strong>why</strong> every result matched.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="reputation" data-d="0" data-kind="hot">
+      <div class="rail"><span class="n">05</span><h2>Reputation</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: click the Basalt card and let it load on camera.</span>Hold on the Diamond badge. Scroll to “In plain words”, then “What you can see vs. what stays private”. Click the <code>Reputation</code> tab and open one factor.</div>
+        <div class="say">
+          <p>Every strategy gets a <strong>reputation tier</strong>, from Bronze to Obsidian, scored on seven factors like risk-adjusted returns, loss control, track record and verification.</p>
+          <p>And we explain it in plain words: about eighteen percent a year, worst drop under three percent. Investors see the results. The code <strong>stays private</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="create" data-d="0">
+      <div class="rail"><span class="n">06</span><h2>Listing a strategy</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: click Create strategy in the top bar.</span>Type a name and summary → Continue → <code>Use example data</code> → hold on the analysis (Silver, “self-reported”) → Continue → <code>Review &amp; publish</code> → Create.</div>
+        <div class="say">
+          <p>Quants list a strategy in minutes by uploading their daily account values. <strong>No code.</strong> StratX scores it instantly, and self-reported numbers stay capped until they&rsquo;re <strong>verified</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="auction" data-d="0" data-kind="go">
+      <div class="rail"><span class="n">07</span><h2>The auction</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: Create opens the “Start an auction now?” pop-up by itself.</span>Asking price <code>15000</code>, lowest offer <code>10000</code> → Start auction → approve. Jump-cut: a buyer offers <code>12000</code>, another offers <code>14000</code>. Back as the quant: <code>My strategies</code> → Accept $14,000 → approve → open it in Solana Explorer.</div>
+        <div class="split" aria-label="Payment split for a 14,000 dollar offer">
+          <div class="q"><strong>$13,580</strong>to the quant · 97%</div>
+          <div class="p"><strong>$420</strong>StratX · 3%</div>
+        </div>
+        <div class="say">
+          <p>Then they start an <strong>auction</strong>. The quant sets a price, investors compete with offers, and the quant accepts the one they want.</p>
+          <p>Every offer is locked in USDC on Solana. Accept fourteen thousand, and one transaction sends <strong>ninety-seven percent</strong> to the quant and three to StratX, and everyone else can withdraw their offer.</p>
+        </div>
+        <div class="alt"><b>If the program isn’t deployed when you record:</b> show Basalt’s demo auction on the Auctions page and say “Here’s how it settles:” before “Accept fourteen thousand”. Don’t show a fake Explorer link.</div>
+      </div>
+    </section>
+
+    <section class="scene" id="customers" data-d="0">
+      <div class="rail"><span class="n">08</span><h2>Customers &amp; market</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: cut back to Explore.</span>Slow scroll through the strategy cards while you talk.</div>
+        <div class="say">
+          <p>Our customers are quants who want to monetize their strategies, and investors who want proven performance.</p>
+          <p>Crypto hedge funds are a <strong>$136 billion</strong> market inside a <strong>$6 trillion</strong> hedge fund industry, yet individual quant strategies still have no dedicated marketplace.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="model" data-d="0">
+      <div class="rail"><span class="n">09</span><h2>Business model</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: click Auctions in the top bar.</span>Point at “Paid instantly: 97% to the quant, 3% to StratX”. Then open a strategy’s Reputation tab and point at “Capital Commitment”.</div>
+        <div class="say">
+          <p>We take a <strong>3% fee</strong> on every successful auction, and 97% goes to the quant.</p>
+          <p>Quants can also back their claims with their own money, which boosts their reputation. Next, if they miss their target, that money goes to <strong>charity</strong>, not to us.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="solana" data-d="0">
+      <div class="rail"><span class="n">10</span><h2>Why Solana</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: cut to the accept transaction in Solana Explorer.</span>Point at the two USDC payments.</div>
+        <div class="say">
+          <p>And this only works on Solana. Without it, someone has to hold every investor&rsquo;s money, and you&rsquo;d have to trust them. On Solana, a program holds it, and every offer costs <strong>under a cent</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" id="close" data-d="0" data-kind="hot">
+      <div class="rail"><span class="n">11</span><h2>Why we’re different &amp; close</h2><span class="tc"></span><span class="est"></span></div>
+      <div class="body">
+        <div class="cue"><span class="lbl">Screen</span><span class="tr">Transition: smooth cut back to the StratX headline. Face cam full screen for the last lines.</span>Hold on the logo and tagline at the end.</div>
+        <div class="say">
+          <p>Other platforms focus on copy trading, automated trading or prediction markets. StratX combines quant strategies, skin in the game, verified reputation and competitive auctions in <strong>one marketplace</strong>.</p>
+          <p>I&rsquo;m Zurab, a sixteen-year-old founder, and my vision is to make strategies transparent and verifiable.</p>
+          <p>We&rsquo;re not building another trading platform. <span class="beat">/</span> We&rsquo;re building a market where <strong>alpha has to prove itself</strong>.</p>
+          <p>This is StratX. Thank you.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="notes">
+    <h2>Before you hit record</h2>
+    <ul>
+      <li><b>The Welcome screen before scene 02’s sign-in still says “Dutch auctions” and “test SOL”.</b> Click Get started straight away so it isn’t on camera, or ask for the app text to be updated first.</li>
+      <li><b>Scene 10 needs the auction program deployed to Devnet</b>, plus two investor wallets holding Devnet USDC. Until then, use the fallback line in that scene. The app already says “the auction program isn’t deployed yet”, so keep the script consistent with what’s on screen.</li>
+      <li><b>Google, Apple and email sign-in need a Privy App ID</b> in <code>.env.local</code> (<code>VITE_PRIVY_APP_ID</code>). Without it, hover those buttons and sign in with Phantom.</li>
+      <li><b>Strategies on Explore are sample data.</b> Scene 05 says so once, out loud. Keep the DEMO DATA badge visible.</li>
+      <li><b>Clear the browser’s local data</b> before recording, so the Explore list only shows what you create on camera.</li>
+      <li><b>Pace:</b> talk like you’re explaining it to a friend, not reading. The times shown are speaking time. Click while you talk, and trim wallet-approval waits in editing, so the video stays under 3:00. Record scene by scene so a mistake only costs one scene.</li>
+      <li><b>Say your name</b> in scene 01 where it says [your name].</li>
+      <li><b>Format:</b> 1920×1080, face cam bottom-right as in the reference, browser zoomed to 125% so the numbers read on a phone.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>StratX · Solana Devnet MVP · not investment advice</span>
+    <span>Script v2 · Oct 2026</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var WPM = 150;
+  var scenes = Array.prototype.slice.call(document.querySelectorAll('.scene'));
+  function fmt(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  var t = 0;
+  var bar = document.getElementById('rosbar');
+  scenes.forEach(function (sc) {
+    var words = sc.querySelector('.say').textContent.replace(/\//g, ' ').trim().split(/\s+/).length;
+    var pauses = sc.querySelectorAll('.say .beat').length * 0.5;
+    var dur = Math.max(Number(sc.dataset.d), Math.ceil(words / WPM * 60 + pauses));
+    sc.querySelector('.tc').textContent = fmt(t) + ' – ' + fmt(t + dur);
+    sc.querySelector('.est').textContent = words + ' words · ~' + dur + 's';
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip' + (sc.dataset.kind ? ' ' + sc.dataset.kind : '');
+    chip.style.setProperty('--d', dur);
+    chip.textContent = sc.querySelector('h2').textContent;
+    chip.title = sc.querySelector('h2').textContent + ' · ' + fmt(t);
+    chip.addEventListener('click', function () { sc.scrollIntoView(); });
+    bar.appendChild(chip);
+    t += dur;
+  });
+  document.getElementById('runtime').textContent = fmt(t);
+  document.getElementById('ros-end').textContent = fmt(t);
+
+  // Seat the X right after "Strat" whatever font ends up rendering.
+  function seatX() {
+    try {
+      var end = 78 + document.getElementById('wm').getComputedTextLength();
+      document.getElementById('wx').setAttribute('transform', 'translate(' + (end + 6) + ' 18)');
+      document.querySelector('.brand svg').setAttribute('viewBox', '0 0 ' + Math.ceil(end + 56) + ' 72');
+    } catch (e) {}
+  }
+  seatX();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(seatX);
+
+  var btn = document.getElementById('prompter');
+  function setMode(on) {
+    document.body.classList.toggle('prompter', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    try { localStorage.setItem('stratx-prompter', on ? '1' : '0'); } catch (e) {}
+  }
+  btn.addEventListener('click', function () { setMode(!document.body.classList.contains('prompter')); });
+  try { if (localStorage.getItem('stratx-prompter') === '1') setMode(true); } catch (e) {}
+})();
+</script>

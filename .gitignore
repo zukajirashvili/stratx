@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+*-keypair.json
+id.json
+
+# Anchor build output
+onchain/target
+onchain/.anchor
+onchain/test-ledger
+onchain/node_modules
+.vercel
+
+# Local-only: demo recording (contains the presenter's face) and tool settings
+demo-video/
+.claude/

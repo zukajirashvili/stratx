@@ -1,0 +1,7 @@
+/node_modules
+/dist
+/demo-video
+/onchain
+/docs
+*.log
+.env*.local

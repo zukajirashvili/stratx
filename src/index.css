@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+
+/*
+ * StratX design tokens. Every colour used in the app resolves to one of these,
+ * so the theme can be tuned from a single place.
+ */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Dark blue base */
+  --color-bg: #08121f;
+  --color-surface: #0d1b2d;
+  --color-surface-2: #12243a;
+  --color-surface-3: #182e48;
+  --color-line: #1f3654;
+  --color-line-strong: #2b4767;
+
+  /* White text */
+  --color-fg: #ffffff;
+  --color-fg-2: #d3dce7;
+  --color-muted: #93a6bd;
+  --color-faint: #66809c;
+
+  /* Orange — primary actions and highlights */
+  --color-accent: #ff7a1a;
+  --color-accent-strong: #ff9446;
+  --color-accent-ink: #1c0b00;
+
+  /* Dark green — success, positive values, trust */
+  --color-green: #0f5b3f;
+  --color-green-strong: #15784f;
+  --color-pos: #34c27a;
+
+  --color-neg: #f0625a;
+  --color-warn: #f4c542;
+  --color-info: #6ab4ff;
+
+  --color-tier-platinum: #b9c7d6;
+  --color-tier-gold: #d6a538;
+  --color-tier-silver: #98a3ae;
+  --color-tier-bronze: #c07f4e;
+  --color-tier-diamond: #7cc6f2;
+  --color-tier-obsidian: #b6a0f2;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface-2) 0%, var(--color-surface-3) 50%, var(--color-surface-2) 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+
+/* Solana wallet-adapter modal, restyled to match the StratX theme. */
+.wallet-adapter-modal-wrapper {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-line);
+  border-radius: 12px !important;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.6) !important;
+  font-family: var(--font-sans) !important;
+}
+.wallet-adapter-modal-overlay { background: rgb(5 6 8 / 0.75) !important; }
+.wallet-adapter-modal-title { font-size: 18px !important; font-weight: 600 !important; line-height: 1.4 !important; padding: 56px 40px 32px !important; }
+.wallet-adapter-modal-button-close { background: var(--color-surface-2) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button { font-family: var(--font-sans) !important; font-size: 15px !important; font-weight: 500 !important; }
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover { background: var(--color-surface-2) !important; }
+.wallet-adapter-modal-list-more { font-family: var(--font-sans) !important; color: var(--color-fg-2) !important; }
+.wallet-adapter-button { font-family: var(--font-sans) !important; }
